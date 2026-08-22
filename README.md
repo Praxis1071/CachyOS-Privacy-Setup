@@ -25,7 +25,7 @@ chmod +x setup.sh
 Aşağıdaki tek komut, scripti indirip/oluşturup doğrudan çalıştırır:
 
 ```fish
-curl -fsSL https://raw.githubusercontent.com/<kullanici>/<repo>/main/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Praxis1071/CachyOS-Privacy-Setup/main/setup.sh | bash
 ```
 
 > `<kullanici>/<repo>` kısmını kendi deponuzla değiştirin. Depo yoksa, aşağıdaki "Chat'ten kopyala-yapıştır" komutunu kullanabilirsiniz.
