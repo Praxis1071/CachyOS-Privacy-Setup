@@ -13,12 +13,22 @@ Bu proje, Arch tabanlı sistemlerde (CachyOS vb.) sistem açılışında otomati
 
 ## Kullanım
 
-### Yöntem — Dosyayı çalıştırarak
+### Yöntem 1 — Dosyayı çalıştırarak
 
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
+
+### Yöntem 2 — Tek satır (fish shell)
+
+Aşağıdaki tek komut, scripti indirip/oluşturup doğrudan çalıştırır:
+
+```fish
+curl -fsSL https://raw.githubusercontent.com/<kullanici>/<repo>/main/setup.sh | bash
+```
+
+> `<kullanici>/<repo>` kısmını kendi deponuzla değiştirin. Depo yoksa, aşağıdaki "Chat'ten kopyala-yapıştır" komutunu kullanabilirsiniz.
 
 ## Önemli Notlar / Uyarılar
 
@@ -27,6 +37,13 @@ chmod +x setup.sh
 - `connectivity.enabled=false` ayarı, captive portal (havaalanı/otel Wi-Fi giriş sayfaları) algılamasını da etkileyebilir.
 - Sanal makine, konteyner veya çoklu ağ kartı olan sistemlerde otomatik arayüz tespiti yanlış kart seçebilir; gerekirse `INTERFACE` değişkenini elle ayarlayın.
 - Script tekrar çalıştırılabilir (idempotent); mevcut servis/konfigürasyon dosyalarının üzerine güvenle yazar.
+- **WARP bağlantı doğrulaması manueldir:** MAC değişimi ve WARP bağlantısı sırasında ağ birkaç saniyeliğine kesintiye uğrayabildiğinden, script içinde otomatik bir `curl` testi YOKTUR (yanlış-negatif hata vermesin diye). Kurulum bittikten birkaç saniye sonra bağlantıyı kendiniz doğrulayın:
+
+  ```bash
+  warp-cli --accept-tos status && curl -s https://www.cloudflare.com/cdn-cgi/trace
+  ```
+
+  Çıktıda `warp=on` satırını görmelisiniz.
 
 ## Kaldırma
 

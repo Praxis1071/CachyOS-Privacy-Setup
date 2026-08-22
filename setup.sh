@@ -155,7 +155,29 @@ sudo systemctl restart NetworkManager
 # ---------------------------------------------------------------------------
 # 7) Durum kontrolü
 # ---------------------------------------------------------------------------
-log "Kurulum tamamlandı! Durum kontrolleri:"
-macchanger -s "$INTERFACE" || true
-warp-cli --accept-tos status || true
-curl -s https://www.cloudflare.com/cdn-cgi/trace || warn "curl trace başarısız oldu (WARP henüz bağlanmamış olabilir)."
+# NOT: Kurulum sırasında MAC değişimi ve WARP bağlantısı ağı birkaç saniyeliğine
+# kesintiye uğratabildiği için burada otomatik bir curl isteği YAPILMIYOR;
+# tam o anda ağ geçici olarak kopuk olabilir ve bu gerçek bir hata değildir.
+# Bunun yerine kullanıcı, ağ tamamen oturduktan sonra aşağıdaki komutu kendisi
+# elle çalıştırıp WARP bağlantısını doğrulayabilir.
+
+echo
+echo "======================================================================"
+echo "[✓] Kurulum tamamlandı!"
+echo
+echo "Servis durumları:"
+systemctl is-active macchanger.service    2>/dev/null | xargs -I{} echo "  - macchanger.service       : {}"
+systemctl is-active warp-svc.service      2>/dev/null | xargs -I{} echo "  - warp-svc.service         : {}"
+systemctl is-active warp-autoconnect.service 2>/dev/null | xargs -I{} echo "  - warp-autoconnect.service : {}"
+echo
+echo "MAC adresi:"
+macchanger -s "$INTERFACE" 2>/dev/null || warn "macchanger -s $INTERFACE çalıştırılamadı."
+echo
+echo "WARP bağlantı durumunu ve gerçekten Cloudflare üzerinden çıktığınızı"
+echo "doğrulamak için birkaç saniye bekleyip AŞAĞIDAKİ KOMUTU KENDİNİZ çalıştırın:"
+echo
+echo "    warp-cli --accept-tos status && curl -s https://www.cloudflare.com/cdn-cgi/trace"
+echo
+echo "Çıktıda 'warp=on' satırı görmelisiniz. Görmüyorsanız birkaç saniye"
+echo "daha bekleyip komutu tekrar deneyin (ağ kısa süreli kopmuş olabilir)."
+echo "======================================================================"
