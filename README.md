@@ -4,7 +4,8 @@ Bu proje, Arch tabanlı sistemlerde (CachyOS vb.) sistem açılışında otomati
 
 ## Özellikler
 
-- **MAC Spoofing:** `wlan0` arayüzü için her boot esnasında rastgele MAC adresi atar.
+- **Dinamik Ağ Algılama:** Sistemdeki aktif ağ kartını (\`wlan0\`, \`eth0\`, \`wlp3s0\` vb.) otomatik tespit eder.
+- **MAC Spoofing:** Algılanan ağ arayüzü için her boot esnasında rastgele MAC adresi atar.
 - **Cloudflare WARP:** Sistem açıldığında otomatik bağlanan tünel servisi kurar.
 - **NetworkManager Fix:** Captive Portal denetimini devre dışı bırakarak Wi-Fi üzerindeki soru işareti simgesini düzeltir.
 
@@ -12,6 +13,7 @@ Bu proje, Arch tabanlı sistemlerde (CachyOS vb.) sistem açılışında otomati
 
 Çalıştırma izni verip betiği çalıştırın:
 
-```bash
+\`\`\`bash
 chmod +x setup.sh
 ./setup.sh
+\`\`\`

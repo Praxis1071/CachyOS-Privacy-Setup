@@ -2,39 +2,47 @@
 
 set -e
 
-echo "[+] Paketler yükleniyor..."
-sudo pacman -S macchanger wget --needed --noconfirm[cite: 1]
-yay -S cloudflare-warp-bin --needed --noconfirm[cite: 1]
+echo "[+] Aktif ağ arayüzü aranıyor..."
+INTERFACE=$(ip route | grep default | awk '{print $5}' | head -n 1)
 
-echo "[+] MAC Changer servisi oluşturuluyor..."
-sudo tee /etc/systemd/system/macchanger.service > /dev/null << 'EOF'
+if [ -z "$INTERFACE" ]; then
+    INTERFACE=$(ip link | awk -F: '$1 ~ /^[0-9]+$/ && $2 !~ /lo/ {print $2; exit}' | tr -d ' ')
+fi
+echo "[+] Kullanılacak ağ arayüzü: $INTERFACE"
+
+echo "[+] Paketler yükleniyor..."
+sudo pacman -S macchanger wget --needed --noconfirm
+yay -S cloudflare-warp-bin --needed --noconfirm
+
+echo "[+] MAC Changer servisi oluşturuluyor ($INTERFACE için)..."
+sudo tee /etc/systemd/system/macchanger.service > /dev/null << EOF
 [Unit]
-Description=macchanger on wlan0
+Description=macchanger on $INTERFACE
 Wants=network-pre.target
 Before=network-pre.target NetworkManager.service
-BindsTo=sys-subsystem-net-devices-wlan0.device
-After=sys-subsystem-net-devices-wlan0.device
+BindsTo=sys-subsystem-net-devices-$INTERFACE.device
+After=sys-subsystem-net-devices-$INTERFACE.device
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/ip link set dev wlan0 down
-ExecStart=/usr/bin/macchanger -r wlan0
-ExecStart=/usr/bin/ip link set dev wlan0 up
+ExecStart=/usr/bin/ip link set dev $INTERFACE down
+ExecStart=/usr/bin/macchanger -r $INTERFACE
+ExecStart=/usr/bin/ip link set dev $INTERFACE up
 RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload[cite: 1]
-sudo systemctl enable --now macchanger.service[cite: 1]
+sudo systemctl daemon-reload
+sudo systemctl enable --now macchanger.service
 
 echo "[+] Cloudflare WARP servisi ve ayarları yapılıyor..."
-sudo systemctl enable --now warp-svc.service[cite: 1]
+sudo systemctl enable --now warp-svc.service
 
-warp-cli registration new || true[cite: 1]
-warp-cli mode warp[cite: 1]
-warp-cli connect[cite: 1]
+warp-cli registration new || true
+warp-cli mode warp
+warp-cli connect
 
 echo "[+] WARP otomatik bağlanma servisi oluşturuluyor..."
 sudo tee /etc/systemd/system/warp-autoconnect.service > /dev/null << 'EOF'
@@ -52,7 +60,7 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl enable warp-autoconnect.service[cite: 1]
+sudo systemctl enable warp-autoconnect.service
 
 echo "[+] NetworkManager bağlantı kontrolü kapatılıyor..."
 sudo mkdir -p /etc/NetworkManager/conf.d/
@@ -61,8 +69,8 @@ sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf > /dev/null << 'EOF'
 enabled=false
 EOF
 
-sudo systemctl restart NetworkManager[cite: 1]
+sudo systemctl restart NetworkManager
 
 echo "[+] Kurulum tamamlandı! Durum kontrolleri:"
-macchanger -s wlan0[cite: 1]
-curl https://www.cloudflare.com/cdn-cgi/trace[cite: 1]
+macchanger -s $INTERFACE
+curl https://www.cloudflare.com/cdn-cgi/trace
