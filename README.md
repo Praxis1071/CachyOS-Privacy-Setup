@@ -1,6 +1,6 @@
 # CachyOS / Arch Linux Privacy Auto-Setup
 
-Bu proje, Arch tabanlı sistemlerde (CachyOS vb.) sistem açılışında otomatik MAC adresi değiştirmeyi, Cloudflare WARP tünellemesini ve NetworkManager sınırlı bağlantı simgesi düzeltmesini otomatize eder.
+Bu proje, Arch tabanlı sistemlerde (CachyOS vb.) sistem açılışında otomatik MAC adresi değiştirmeyi ve Cloudflare WARP tünellemesini otomatize eder.
 
 ## Özellikler
 
@@ -30,11 +30,7 @@ Aşağıdaki tek komut, scripti indirip/oluşturup doğrudan çalıştırır:
 curl -fsSL https://raw.githubusercontent.com/Praxis1071/CachyOS-Privacy-Setup/main/setup.sh | bash
 ```
 
-> `<kullanici>/<repo>` kısmını kendi deponuzla değiştirin. Depo yoksa, aşağıdaki "Chat'ten kopyala-yapıştır" komutunu kullanabilirsiniz.
-
-> **Not (pipe üzerinden çalıştırma):** `curl | bash` şeklinde çalıştırıldığında, `yay` kurulumu için sorulan onay sorusu standart girdiyi (stdin) değil doğrudan terminalinizi (`/dev/tty`) kullanır; bu sayede pipe kullanımında da klavye girdisi normal şekilde çalışır. Gerçek bir terminal bulunamazsa (ör. tamamen otomatik/headless bir ortamda), script güvenlik gereği `yay` kurulumunu otomatik ONAYLAMAZ ve elle kurmanızı ister.
-
-## Önemli Notlar / Uyarılar
+## Uyarılar
 
 - Script `sudo` gerektiren birçok sistem dosyasını değiştirir (systemd unit'leri, NetworkManager konfigürasyonu). Çalıştırmadan önce içeriğini gözden geçirmeniz önerilir.
 - `cloudflare-warp-bin` AUR paketidir; `yay`/`paru` ile `--noconfirm` bayrağı kullanılarak kurulur. AUR paketlerini güvenmeden önce PKGBUILD'ini incelemeniz tavsiye edilir.
