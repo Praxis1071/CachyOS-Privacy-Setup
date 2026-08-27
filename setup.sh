@@ -10,6 +10,20 @@ set -uo pipefail
 # bağlıyken/kayıtlıyken sıfırdan farklı çıkış kodu döndürebiliyor; script
 # bu yüzden erken durmasın diye her adım kendi hata kontrolünü yapıyor.
 
+# ---------------------------------------------------------------------------
+# 0) Root kontrolü
+# ---------------------------------------------------------------------------
+# Script 'sudo ./setup.sh' ile (yani doğrudan root olarak) çalıştırılırsa:
+#   - 'makepkg' (yay derlemesi için) Arch güvenlik kuralları gereği root
+#     olarak çalışmayı reddeder ve script orta yerde patlar.
+# Bu yüzden script'in normal kullanıcı olarak başlatılmasını zorunlu kılıyoruz;
+# gereken yerlerde zaten kendi içinde 'sudo' çağırıyor.
+if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    echo "[X] Lütfen bu scripti 'sudo' ile DEĞİL, normal kullanıcı olarak çalıştırın." >&2
+    echo "[X] Script ihtiyaç duyduğu adımlarda kendisi 'sudo' isteyecektir." >&2
+    exit 1
+fi
+
 VIRTUAL_IFACE_REGEX='^(lo|docker|veth|br-|virbr|tun|tap|wg|vboxnet|zt)'
 
 log()  { echo "[+] $*"; }
@@ -40,6 +54,10 @@ if echo "$INTERFACE" | grep -Eq "$VIRTUAL_IFACE_REGEX"; then
 fi
 
 log "Kullanılacak ağ arayüzü: $INTERFACE"
+warn "ÖNEMLİ: macchanger servisi bu arayüze (\"$INTERFACE\") SABİTLENECEK."
+warn "Daha sonra farklı bir ağ arayüzüne geçerseniz (ör. Wi-Fi'dan Ethernet'e,"
+warn "ya da arayüz adı değişirse) bu script tekrar çalıştırılmalıdır, aksi"
+warn "halde MAC değişimi artık kullanılmayan eski arayüz için yapılmaya devam eder."
 
 # ---------------------------------------------------------------------------
 # 2) Paketler
@@ -49,6 +67,46 @@ sudo pacman -S macchanger --needed --noconfirm || die "macchanger kurulamadı."
 
 log "Cloudflare WARP kontrol ediliyor..."
 if ! require_cmd warp-cli; then
+    if ! require_cmd yay && ! require_cmd paru; then
+        warn "AUR yardımcı programı (yay/paru) bulunamadı."
+        echo
+
+        # NOT: Script 'curl ... | bash' şeklinde pipe üzerinden çalıştırılırsa
+        # standart girdi (stdin) pipe'a bağlı olur ve normal 'read -p' klavye
+        # girdisi ALAMAZ (script sessizce donar ya da boş girdiyle devam eder).
+        # Bunu önlemek için doğrudan terminalden (/dev/tty) okuyoruz. Eğer
+        # gerçek bir terminal yoksa (ör. tamamen otomatik/headless bir CI
+        # ortamı), güvenli tarafta kalıp kuruluma devam ETMİYORUZ.
+        if [ -r /dev/tty ]; then
+            read -p "[?] 'cloudflare-warp-bin' paketi AUR'da olduğu için bir AUR yardımcı programına ihtiyaç var. 'yay' şimdi kurulsun mu? [E/h]: " YAY_ONAY < /dev/tty
+        else
+            warn "Etkileşimli bir terminal (tty) bulunamadı, güvenlik gereği yay otomatik kurulmayacak."
+            YAY_ONAY="h"
+        fi
+
+        case "$YAY_ONAY" in
+            [Hh]* )
+                die "'yay' veya 'paru' bulunamadı. 'cloudflare-warp-bin' paketini AUR üzerinden elle yükleyip scripti tekrar çalıştırın."
+                ;;
+            * )
+                log "yay kuruluyor (tüm Arch tabanlı dağıtımlarla uyumlu, kaynaktan derleme yöntemi)..."
+                sudo pacman -S --needed --noconfirm base-devel git \
+                    || die "base-devel/git kurulamadı, yay derlenemez."
+
+                YAY_BUILD_DIR=$(mktemp -d)
+                git clone https://aur.archlinux.org/yay-bin.git "$YAY_BUILD_DIR/yay-bin" \
+                    || die "yay-bin AUR deposu klonlanamadı (internet bağlantınızı kontrol edin)."
+
+                (cd "$YAY_BUILD_DIR/yay-bin" && makepkg -si --needed --noconfirm) \
+                    || die "yay derlenip kurulamadı."
+
+                rm -rf "$YAY_BUILD_DIR"
+                require_cmd yay || die "yay kurulumu tamamlandı ama komut bulunamadı, PATH'inizi kontrol edin."
+                log "yay başarıyla kuruldu."
+                ;;
+        esac
+    fi
+
     if require_cmd yay; then
         yay -S cloudflare-warp-bin --needed --noconfirm
     elif require_cmd paru; then
@@ -180,4 +238,9 @@ echo "    warp-cli --accept-tos status && curl -s https://www.cloudflare.com/cdn
 echo
 echo "Çıktıda 'warp=on' satırı görmelisiniz. Görmüyorsanız birkaç saniye"
 echo "daha bekleyip komutu tekrar deneyin (ağ kısa süreli kopmuş olabilir)."
+echo
+echo "[!] HATIRLATMA: macchanger.service şu an sadece '$INTERFACE' arayüzü"
+echo "    için ayarlandı. Wi-Fi <-> Ethernet arasında geçiş yaparsanız ya da"
+echo "    farklı bir ağ kartı kullanmaya başlarsanız, bu scripti YENİDEN"
+echo "    çalıştırarak servisi yeni arayüze göre güncellemeniz gerekir."
 echo "======================================================================"

@@ -13,6 +13,8 @@ Bu proje, Arch tabanlı sistemlerde (CachyOS vb.) sistem açılışında otomati
 
 ## Kullanım
 
+> ⚠️ **Script'i `sudo ./setup.sh` ile ÇALIŞTIRMAYIN.** Script normal kullanıcı olarak başlatılmalıdır; ihtiyaç duyduğu her adımda kendisi `sudo` isteyecektir. Root olarak çalıştırılırsa, `yay` kurulumu sırasında kullanılan `makepkg` komutu Arch güvenlik politikaları gereği root olarak çalışmayı reddeder ve script hata ile durur. Script bu durumu artık kendisi de tespit edip net bir uyarıyla çıkış yapar.
+
 ### Yöntem 1 — Dosyayı çalıştırarak
 
 ```bash
@@ -30,12 +32,16 @@ curl -fsSL https://raw.githubusercontent.com/Praxis1071/CachyOS-Privacy-Setup/ma
 
 > `<kullanici>/<repo>` kısmını kendi deponuzla değiştirin. Depo yoksa, aşağıdaki "Chat'ten kopyala-yapıştır" komutunu kullanabilirsiniz.
 
+> **Not (pipe üzerinden çalıştırma):** `curl | bash` şeklinde çalıştırıldığında, `yay` kurulumu için sorulan onay sorusu standart girdiyi (stdin) değil doğrudan terminalinizi (`/dev/tty`) kullanır; bu sayede pipe kullanımında da klavye girdisi normal şekilde çalışır. Gerçek bir terminal bulunamazsa (ör. tamamen otomatik/headless bir ortamda), script güvenlik gereği `yay` kurulumunu otomatik ONAYLAMAZ ve elle kurmanızı ister.
+
 ## Önemli Notlar / Uyarılar
 
 - Script `sudo` gerektiren birçok sistem dosyasını değiştirir (systemd unit'leri, NetworkManager konfigürasyonu). Çalıştırmadan önce içeriğini gözden geçirmeniz önerilir.
 - `cloudflare-warp-bin` AUR paketidir; `yay`/`paru` ile `--noconfirm` bayrağı kullanılarak kurulur. AUR paketlerini güvenmeden önce PKGBUILD'ini incelemeniz tavsiye edilir.
+- **Sistemde `yay` veya `paru` yoksa:** Script sizden onay ister ve onaylarsanız `yay-bin` AUR deposunu klonlayıp (`base-devel`, `git` bağımlılıklarını kurarak) kaynaktan derler. Bu yöntem depo adı veya paket yöneticisi farkı gözetmeksizin tüm Arch tabanlı dağıtımlarda (CachyOS, Manjaro, EndeavourOS vb.) çalışır. Onay vermezseniz script AUR yardımcı programını elle kurmanızı isteyip durur.
 - `connectivity.enabled=false` ayarı, captive portal (havaalanı/otel Wi-Fi giriş sayfaları) algılamasını da etkileyebilir.
 - Sanal makine, konteyner veya çoklu ağ kartı olan sistemlerde otomatik arayüz tespiti yanlış kart seçebilir; gerekirse `INTERFACE` değişkenini elle ayarlayın.
+- **Ağ arayüzü değişirse scripti tekrar çalıştırın:** `macchanger.service`, kurulum anında tespit edilen arayüze (ör. `wlan0`) sabitlenir. Daha sonra Wi-Fi'dan Ethernet'e (veya tam tersi) geçerseniz ya da farklı bir ağ kartı kullanmaya başlarsanız, servis hâlâ eski/kullanılmayan arayüzü hedefleyecektir. Bu durumda MAC değişimi yeni arayüz için etkin olmaz; scripti yeni arayüzle tekrar çalıştırarak servisi güncelleyin.
 - Script tekrar çalıştırılabilir (idempotent); mevcut servis/konfigürasyon dosyalarının üzerine güvenle yazar.
 - **WARP bağlantı doğrulaması manueldir:** MAC değişimi ve WARP bağlantısı sırasında ağ birkaç saniyeliğine kesintiye uğrayabildiğinden, script içinde otomatik bir `curl` testi YOKTUR (yanlış-negatif hata vermesin diye). Kurulum bittikten birkaç saniye sonra bağlantıyı kendiniz doğrulayın:
 
